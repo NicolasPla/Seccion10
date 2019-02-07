@@ -1,9 +1,11 @@
 package com.example.seccion10.Activities.Fragments;
 
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
@@ -11,6 +13,7 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,18 +36,12 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMarkerDragListener, View.OnClickListener {
+public class MapFragment extends Fragment implements OnMapReadyCallback, View.OnClickListener {
 
 
     private View rootView;
     private GoogleMap gMap;
     private MapView mapView;
-
-
-    private Geocoder geocoder;
-    private List<Address> addresses;
-
-    private MarkerOptions marker;
 
     private FloatingActionButton fab;
 
@@ -69,7 +66,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
         super.onViewCreated(view, savedInstanceState);
 
         mapView = rootView.findViewById(R.id.map);
-        if (mapView != null){
+        if (mapView != null) {
             mapView.onCreate(null);
             mapView.onResume();
             mapView.getMapAsync(this);
@@ -84,40 +81,31 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
     @Override
     public void onMapReady(GoogleMap googleMap) {
         gMap = googleMap;
-
-        gMap.setMaxZoomPreference(20);
-        gMap.setMinZoomPreference(10);
-
-        LatLng place = new LatLng(37.38, -5.9844);
-        CameraUpdate zoom = CameraUpdateFactory.zoomTo(15);
-
-        marker = new MarkerOptions();
-        marker.position(place);
-        marker.title("Mi marcador");
-        marker.draggable(true);
-        marker.snippet("Esto es una caja de texto donde modificar los datos");
-        marker.icon(BitmapDescriptorFactory.fromResource(android.R.drawable.star_on));
-
-        gMap.addMarker(marker);
-        gMap.animateCamera(zoom);
-        gMap.addMarker(new MarkerOptions().position(place).title("Marker in sevilla").draggable(true));
-        gMap.moveCamera(CameraUpdateFactory.newLatLng(place));
-
-        gMap.setOnMarkerDragListener(this);
-
-        geocoder = new Geocoder(getContext(), Locale.getDefault());
+        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        gMap.setMyLocationEnabled(true);
     }
 
-    private void checkIfGpsIsEnabled(){
+    private boolean isGpsIsEnabled(){
         try {
             int gpsSignal = Settings.Secure.getInt(getActivity().getContentResolver(), Settings.Secure.LOCATION_MODE);
 
             if (gpsSignal == 0) {
-                // El GPS no esta Activo
-                showAlertInfo();
+                return false;
+            } else{
+                return true;
             }
         } catch (Settings.SettingNotFoundException e) {
             e.printStackTrace();
+            return false;
         }
     }
 
@@ -139,57 +127,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
 
     }
 
-    @Override
-    public void onMarkerDragStart(Marker marker) {
-
-        marker.hideInfoWindow();
-
-    }
-
-    @Override
-    public void onMarkerDrag(Marker marker) {
-
-    }
-
-    @Override
-    public void onMarkerDragEnd(Marker marker) {
-        double latitude = marker.getPosition().latitude;
-        double longitude = marker.getPosition().longitude;
-
-        try {
-            addresses =  geocoder.getFromLocation(latitude, longitude, 1);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        String address = addresses.get(0).getAddressLine(0);
-        String city = addresses.get(0).getLocality();
-        String state = addresses.get(0).getAdminArea();
-        String country = addresses.get(0).getCountryName();
-        String postalCode = addresses.get(0).getPostalCode();
-
-        marker.setSnippet(city + ", " + country);
-
-        marker.showInfoWindow();
-
-        /*marker.setSnippet("address: " + addresses + "\n" +
-                "address: " + "address" + "\n" +
-                "city: " + "city" + "\n" +
-                "state: " + "state" + "\n" +
-                "country: " + "country" + "\n" +
-                "postalCode: " + postalCode+ "\n");*/
-/*
-        Toast.makeText(getContext(), "address: " + addresses + "\n" +
-                "address: " + "address" + "\n" +
-                "city: " + "city" + "\n" +
-                "state: " + "state" + "\n" +
-                "country: " + "country" + "\n" +
-                "postalCode: " + postalCode+ "\n",
-                Toast.LENGTH_SHORT).show();*/
-    }
 
     @Override
     public void onClick(View v) {
-        this.checkIfGpsIsEnabled();
+        if (!this.isGpsIsEnabled()){
+            showAlertInfo();
+        }
     }
 }
