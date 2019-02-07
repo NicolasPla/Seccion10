@@ -1,6 +1,8 @@
 package com.example.seccion10.Activities.Fragments;
 
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
@@ -8,6 +10,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,7 +33,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMarkerDragListener {
+public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleMap.OnMarkerDragListener, View.OnClickListener {
 
 
     private View rootView;
@@ -43,6 +46,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
 
     private MarkerOptions marker;
 
+    private FloatingActionButton fab;
+
     public MapFragment() {
     }
 
@@ -52,6 +57,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
                              Bundle savedInstanceState) {
 
         rootView = inflater.inflate(R.layout.fragment_map, container, false);
+
+        fab = rootView.findViewById(R.id.fab);
+        fab.setOnClickListener(this);
+
         return rootView;
     }
 
@@ -65,13 +74,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
             mapView.onResume();
             mapView.getMapAsync(this);
         }
-        this.checkIfGpsIsEnabled();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        this.checkIfGpsIsEnabled();
     }
 
     @Override
@@ -107,12 +114,29 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
 
             if (gpsSignal == 0) {
                 // El GPS no esta Activo
-                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                startActivity(intent);
+                showAlertInfo();
             }
         } catch (Settings.SettingNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    private void showAlertInfo(){
+        new AlertDialog.Builder(getContext())
+                .setTitle("GPS Signal")
+                .setMessage("You don´t have GPS signal enabled. " +
+                        "Would you like to enale the GPS Signal now?")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        startActivity(intent);
+                    }
+                })
+                .setNegativeButton("CANCEL",null)
+                .show();
+
     }
 
     @Override
@@ -162,5 +186,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, GoogleM
                 "country: " + "country" + "\n" +
                 "postalCode: " + postalCode+ "\n",
                 Toast.LENGTH_SHORT).show();*/
+    }
+
+    @Override
+    public void onClick(View v) {
+        this.checkIfGpsIsEnabled();
     }
 }
